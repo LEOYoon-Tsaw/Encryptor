@@ -31,7 +31,7 @@ private func transcode(input: String, prefix: String = "") -> String {
 private func reverseCode(codeString: String) throws -> String {
     let codes = codeString.characters.split(seperator).map { String($0) }
     let text = try codes.map { (code: String) throws -> String in
-        if let unicode = Int(code, radix: base) where 0...0x10ffff ~= unicode {
+        if let unicode = Int(code, radix: base) where 0...0x10ffff ~= unicode && !(0xd800...0xdfff ~= unicode) {
             return String(UnicodeScalar(unicode))
         } else {
             throw ProcessingErrors.invalidEncryption
