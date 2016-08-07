@@ -5,7 +5,7 @@
 //  Created by LEO Yoon-Tsaw on 18/4/15.
 //  Copyright (c) 2016 Yoon-Tsaw Leo. All rights reserved.
 //
-private func parse(left: String, right: String) -> Dictionary<Character, Character>? {
+private func parse(_ left: String, right: String) -> Dictionary<Character, Character>? {
     guard left.characters.count == right.characters.count else { return nil }
     var rotor = Dictionary<Character, Character>()
     var rotorMirror = Dictionary<Character, Character>()
@@ -13,7 +13,7 @@ private func parse(left: String, right: String) -> Dictionary<Character, Charact
     for char in left.characters {
         rotor[char] = right.characters[index]
         rotorMirror[right.characters[index]] = char
-        index = index.successor()
+        index = right.index(after: index)
     }
     if min(rotor.count, rotorMirror.count) < left.characters.count {
         return nil

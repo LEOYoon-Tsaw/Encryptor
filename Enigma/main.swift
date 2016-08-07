@@ -6,30 +6,30 @@
 //  Copyright (c) 2016 Yoon-Tsaw Leo. All rights reserved.
 //
 
-public enum ProcessingErrors: ErrorType {
+public enum ProcessingErrors: ErrorProtocol {
     case invalidFormat, invalidEncryption
 }
 public enum ProcessDirection: String {
     case encryption, decryption
 }
 
-private func encode(input: String, configure: Configuration) throws -> String {
-    let enigma1 = enigmaMachine(configure)
-    let enigma2 = enigmaMachine(configure)
+private func encode(_ input: String, configure: Configuration) throws -> String {
+    let enigma1 = enigmaMachine(mappings: configure)
+    let enigma2 = enigmaMachine(mappings: configure)
     var encodedText = input
-    encodedText = try encoder(encodedText, machine: enigma1)
-    encodedText = String(encodedText.characters.reverse())
-    encodedText = try encoder(encodedText, machine: enigma2)
+    encodedText = try encoder(text: encodedText, machine: enigma1)
+    encodedText = String(encodedText.characters.reversed())
+    encodedText = try encoder(text: encodedText, machine: enigma2)
     return encodedText
 }
 
 private let base = 9, seperator: Character = "9"
-private func transcode(input: String, prefix: String = "") -> String {
-    let codes = input.unicodeScalars.map { String($0.value, radix: base) }.joinWithSeparator(String(seperator))
+private func transcode(_ input: String, prefix: String = "") -> String {
+    let codes = input.unicodeScalars.map { String($0.value, radix: base) }.joined(separator: String(seperator))
     return codes
 }
-private func reverseCode(codeString: String) throws -> String {
-    let codes = codeString.characters.split(seperator).map { String($0) }
+private func reverseCode(_ codeString: String) throws -> String {
+    let codes = codeString.characters.split(separator: seperator).map { String($0) }
     let text = try codes.map { (code: String) throws -> String in
         if let unicode = Int(code, radix: base) where 0...0x10ffff ~= unicode && !(0xd800...0xdfff ~= unicode) {
             return String(UnicodeScalar(unicode))
@@ -37,10 +37,10 @@ private func reverseCode(codeString: String) throws -> String {
             throw ProcessingErrors.invalidEncryption
         }
     }
-    return text.joinWithSeparator("")
+    return text.joined(separator: "")
 }
 
-public func process(input: String, configure: Configuration = rotors) throws -> (String, ProcessDirection) {
+public func process(_ input: String, configure: Configuration = rotors) throws -> (String, ProcessDirection) {
     var string: String
     var encodedText: String
     let direction: ProcessDirection
