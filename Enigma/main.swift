@@ -13,7 +13,7 @@ public enum ProcessDirection: String {
     case encryption, decryption
 }
 
-private func encode(_ input: String, configure: Configuration) throws -> String {
+private func encode(_ input: String, with configure: Configuration) throws -> String {
     let enigma1 = enigmaMachine(mappings: configure)
     let enigma2 = enigmaMachine(mappings: configure)
     var encodedText = input
@@ -24,11 +24,11 @@ private func encode(_ input: String, configure: Configuration) throws -> String 
 }
 
 private let base = 9, seperator: Character = "9"
-private func transcode(_ input: String, prefix: String = "") -> String {
+private func transcode(from input: String, prefix: String = "") -> String {
     let codes = input.unicodeScalars.map { String($0.value, radix: base) }.joined(separator: String(seperator))
     return codes
 }
-private func reverseCode(_ codeString: String) throws -> String {
+private func reverse(code codeString: String) throws -> String {
     let codes = codeString.characters.split(separator: seperator).map { String($0) }
     let text = try codes.map { (code: String) throws -> String in
         if let unicode = UInt32(code, radix: base), let uniChar = UnicodeScalar(unicode) {
@@ -37,7 +37,7 @@ private func reverseCode(_ codeString: String) throws -> String {
             throw ProcessingErrors.invalidEncryption
         }
     }
-    return text.joined(separator: "")
+    return text.joined()
 }
 
 public func process(_ input: String, configure: Configuration = rotors) throws -> (String, ProcessDirection) {
@@ -45,12 +45,12 @@ public func process(_ input: String, configure: Configuration = rotors) throws -
     var encodedText: String
     let direction: ProcessDirection
     do {
-        string = try encode(input, configure: configure)
-        encodedText = try reverseCode(string)
+        string = try encode(input, with: configure)
+        encodedText = try reverse(code: string)
         direction = .decryption
     } catch is Errors {
-        string = transcode(input)
-        encodedText = try encode(string, configure: configure)
+        string = transcode(from: input)
+        encodedText = try encode(string, with: configure)
         direction = .encryption
     }
     return (encodedText, direction)
