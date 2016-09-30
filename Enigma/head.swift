@@ -8,7 +8,7 @@
 //  Enigma Machine -- An old-fashioned encoding algorithm
 //
 
-public enum Errors: ErrorProtocol {
+public enum Errors: Error {
     case invalidCharacters(character: Character)
 }
 

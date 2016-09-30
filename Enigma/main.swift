@@ -6,7 +6,7 @@
 //  Copyright (c) 2016 Yoon-Tsaw Leo. All rights reserved.
 //
 
-public enum ProcessingErrors: ErrorProtocol {
+public enum ProcessingErrors: Error {
     case invalidFormat, invalidEncryption
 }
 public enum ProcessDirection: String {
@@ -31,8 +31,8 @@ private func transcode(_ input: String, prefix: String = "") -> String {
 private func reverseCode(_ codeString: String) throws -> String {
     let codes = codeString.characters.split(separator: seperator).map { String($0) }
     let text = try codes.map { (code: String) throws -> String in
-        if let unicode = Int(code, radix: base) where 0...0x10ffff ~= unicode && !(0xd800...0xdfff ~= unicode) {
-            return String(UnicodeScalar(unicode))
+        if let unicode = UInt32(code, radix: base), let uniChar = UnicodeScalar(unicode) {
+            return uniChar.description
         } else {
             throw ProcessingErrors.invalidEncryption
         }
@@ -56,18 +56,17 @@ public func process(_ input: String, configure: Configuration = rotors) throws -
     return (encodedText, direction)
 }
 
-print("請鍵入想加密/解密的內容（若要結束請鍵入「我不玩了」）：\n")
-while let inputString = readLine() where !["我不玩了", "不玩了", "結束", "I'm done", "quit", "stop"].contains(inputString) {
-    guard !inputString.isEmpty else { continue }
+let arguments = CommandLine.arguments
+if arguments.count == 1 {
+    print("此乃一密碼機，用法：鍵入「Enigma 內容」，程式自動判斷加密或解密內容。\n")
+} else {
+    let inputString = arguments.dropFirst().joined(separator: " ")
     do {
         let (encodedText, direction) = try process(inputString)
-        print("\(direction == .encryption ? "加密" : "解密")後的內容爲：\n\(encodedText)\n繼續嗎？（若要結束請鍵入「我不玩了」）\n")
+        print("\(direction == .encryption ? "加密" : "解密")得到：\n\(encodedText)\n")
     } catch is ProcessingErrors {
-        print("密文有誤，解密失敗。試試別的？\n")
-        continue
+        print("密文有誤，解密失敗，試試別的？\n")
     } catch Errors.invalidCharacters(let character) {
-        print("糟糕，出錯了！無法加密「\(character)」")
-        break
+        print("糟糕，出錯了！無法加密「\(character)」\n")
     }
 }
-print("等你回來，再見！")
