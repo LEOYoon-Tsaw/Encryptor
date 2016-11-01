@@ -40,7 +40,7 @@ private func reverse(code codeString: String) throws -> String {
     return text.joined()
 }
 
-public func process(_ input: String, configure: Configuration = rotors) throws -> (String, ProcessDirection) {
+public func process(_ input: String, with configure: Configuration = rotors) throws -> (String, ProcessDirection) {
     var string: String
     var encodedText: String
     let direction: ProcessDirection
