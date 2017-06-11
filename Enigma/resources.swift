@@ -6,22 +6,13 @@
 //  Copyright (c) 2016 Yoon-Tsaw Leo. All rights reserved.
 //
 private func parse(left: String, right: String) -> Dictionary<Character, Character>? {
-    guard left.characters.count == right.characters.count else { return nil }
-    var rotor = Dictionary<Character, Character>()
-    var rotorMirror = Dictionary<Character, Character>()
-    var index = right.startIndex
-    for char in left.characters {
-        rotor[char] = right.characters[index]
-        rotorMirror[right.characters[index]] = char
-        index = right.index(after: index)
-    }
-    if min(rotor.count, rotorMirror.count) < left.characters.count {
-        return nil
-    } else {
-        return rotor
-    }
+    guard left.count == right.count else { return nil }
+    let rotor = Dictionary(zip(left, right)) { (first, second) in first }
+    guard rotor.count == left.count else { return nil }
+    return rotor
 }
 
+let base = 9, seperator: Character = "9"
 let rotors = ([(parse(left: "3194820576", right: "7325091864")!, 1),
     (parse(left: "6234098751", right: "5426801973")!, 2),
     (parse(left: "6735120894", right: "0651924783")!, 3),

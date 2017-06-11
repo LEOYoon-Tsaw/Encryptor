@@ -14,8 +14,8 @@ public enum ProcessDirection: String {
 }
 
 private func encode(_ input: String, with configure: Configuration) throws -> String {
-    let enigma1 = enigmaMachine(mappings: configure)
-    let enigma2 = enigmaMachine(mappings: configure)
+    let enigma1 = try enigmaMachine(mappings: configure)
+    let enigma2 = try enigmaMachine(mappings: configure)
     var encodedText = input
     encodedText = try encoder(text: encodedText, machine: enigma1)
     encodedText = String(encodedText.characters.reversed())
@@ -23,21 +23,20 @@ private func encode(_ input: String, with configure: Configuration) throws -> St
     return encodedText
 }
 
-private let base = 9, seperator: Character = "9"
 private func transcode(from input: String, prefix: String = "") -> String {
     let codes = input.unicodeScalars.map { String($0.value, radix: base) }.joined(separator: String(seperator))
     return codes
 }
 private func reverse(code codeString: String) throws -> String {
-    let codes = codeString.characters.split(separator: seperator).map { String($0) }
-    let text = try codes.map { (code: String) throws -> String in
+    let codes = codeString.split(separator: seperator).map { String($0) }
+    let text = try codes.map { (code: String) throws -> Character in
         if let unicode = UInt32(code, radix: base), let uniChar = UnicodeScalar(unicode) {
-            return uniChar.description
+            return Character(uniChar)
         } else {
             throw ProcessingErrors.invalidEncryption
         }
     }
-    return text.joined()
+    return String(text)
 }
 
 public func process(_ input: String, with configure: Configuration = rotors) throws -> (String, ProcessDirection) {
@@ -58,15 +57,17 @@ public func process(_ input: String, with configure: Configuration = rotors) thr
 
 let arguments = CommandLine.arguments
 if arguments.count == 1 {
-    print("此乃一密碼機，用法：鍵入「Enigma 內容」，程式自動判斷加密或解密內容。\n")
+    print("此乃一密碼機，用法：鍵入「Enigma 內容」，程式自動判斷加密或解密內容。")
 } else {
     let inputString = arguments.dropFirst().joined(separator: " ")
     do {
         let (encodedText, direction) = try process(inputString)
-        print("\(direction == .encryption ? "加密" : "解密")得到：\n\(encodedText)\n")
+        print("\(direction == .encryption ? "加密" : "解密")得到：\n\(encodedText)")
     } catch is ProcessingErrors {
-        print("密文有誤，解密失敗，試試別的？\n")
+        print("密文有誤，解密失敗，試試別的？")
     } catch Errors.invalidCharacters(let character) {
-        print("糟糕，出錯了！無法加密「\(character)」\n")
+        print("糟糕，出錯了！無法加密「\(character)」")
+    } catch Errors.duplicationInConfiguration(let characters) {
+        print("糟糕，出錯了！密碼機內部故障，「\(characters.0)」、「\(characters.1)」重複")
     }
 }

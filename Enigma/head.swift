@@ -10,31 +10,40 @@
 
 public enum Errors: Error {
     case invalidCharacters(character: Character)
+    case duplicationInConfiguration(characters: (Character, Character))
 }
 
 public typealias Configuration = ([([Character: Character], Int)], [Character: Character])
 typealias EnigmaTranslator = (Character) throws -> Character
 
-func enigmaMachine(mappings: Configuration) -> EnigmaTranslator {
+func enigmaMachine(mappings: Configuration) throws -> EnigmaTranslator {
     var turn: UInt = 0
     var extraTurn: UInt = 0
 
-    func rotorCreator(mapping: [Character: Character], frequency: Int) -> (EnigmaTranslator, EnigmaTranslator) {
+    func rotorCreator(mapping: [Character: Character], frequency: Int) throws -> (EnigmaTranslator, EnigmaTranslator) {
+        let length = mapping.count
         var leftSide = Array(mapping.keys)
         let rightSide = Array(mapping.values)
+        var leftSearch = Dictionary(uniqueKeysWithValues: leftSide.enumerated().map { ($0.element, $0.offset) })
+        let rightSearch = try Dictionary(rightSide.enumerated().map { ($0.element, $0.offset) }) { (first, second) in
+            throw Errors.duplicationInConfiguration(characters: (rightSide[first], rightSide[second]))
+        }
+        
         func rotor(_ input: Character) throws -> Character {
             if turn % UInt(frequency) == 0 {
                 let first = leftSide.removeFirst()
                 leftSide.append(first)
+                leftSearch = leftSearch.mapValues { $0 - 1 }
+                leftSearch[first] = length - 1
             }
-            guard let index = leftSide.index(of: input) else {
+            guard let index = leftSearch[input] else {
                 throw Errors.invalidCharacters(character: input)
             }
             extraTurn = extraTurn &+ UInt(index % 3)
             return rightSide[index]
         }
         func reverseRotor(_ input: Character) throws -> Character {
-            guard let index = rightSide.index(of: input) else {
+            guard let index = rightSearch[input] else {
                 throw Errors.invalidCharacters(character: input)
             }
             extraTurn = extraTurn &+ UInt(index % 3)
@@ -43,13 +52,16 @@ func enigmaMachine(mappings: Configuration) -> EnigmaTranslator {
         return (rotor, reverseRotor)
     }
 
-    func reflectorCreator(mapping: [Character: Character]) -> EnigmaTranslator {
-        var mapping = mapping
-        for (i, o) in mapping {
-            mapping[o] = i
+    func reflectorCreator(mapping: [Character: Character]) throws -> EnigmaTranslator {
+        let map = try mapping.merging(mapping.map { ($0.value, $0.key) }) { (first, second) in
+            if first == second {
+                return first
+            } else {
+                throw Errors.duplicationInConfiguration(characters: (first, second))
+            }
         }
         func reflector(_ input: Character) throws -> Character {
-            guard let output = mapping[input] else {
+            guard let output = map[input] else {
                 throw Errors.invalidCharacters(character: input)
             }
             return output
@@ -57,9 +69,9 @@ func enigmaMachine(mappings: Configuration) -> EnigmaTranslator {
         return reflector
     }
 
-    var encoders = [reflectorCreator(mapping: mappings.1)]
+    var encoders = try [reflectorCreator(mapping: mappings.1)]
     for (connections, frequency) in mappings.0.reversed() {
-        let (frontRotor, reverseRotor) = rotorCreator(mapping: connections, frequency: frequency)
+        let (frontRotor, reverseRotor) = try rotorCreator(mapping: connections, frequency: frequency)
         encoders.insert(frontRotor, at: 0)
         encoders.append(reverseRotor)
     }
@@ -79,7 +91,7 @@ func enigmaMachine(mappings: Configuration) -> EnigmaTranslator {
 
 func encoder(text: String, machine: EnigmaTranslator) throws -> String {
     var encodedText = ""
-    for word in text.characters {
+    for word in text {
         let encodedWord = try machine(word)
         encodedText.append(encodedWord)
     }
