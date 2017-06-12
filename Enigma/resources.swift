@@ -3,7 +3,7 @@
 //  Enigma
 //
 //  Created by LEO Yoon-Tsaw on 18/4/15.
-//  Copyright (c) 2016 Yoon-Tsaw Leo. All rights reserved.
+//  Copyright (c) 2017 Yoon-Tsaw Leo. All rights reserved.
 //
 private func parse(left: String, right: String) -> Dictionary<Character, Character>? {
     guard left.count == right.count else { return nil }

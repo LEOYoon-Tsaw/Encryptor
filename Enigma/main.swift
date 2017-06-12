@@ -3,7 +3,7 @@
 //  Enigma
 //
 //  Created by LEO Yoon-Tsaw on 18/4/15.
-//  Copyright (c) 2016 Yoon-Tsaw Leo. All rights reserved.
+//  Copyright (c) 2017 Yoon-Tsaw Leo. All rights reserved.
 //
 
 public enum ProcessingErrors: Error {
@@ -13,13 +13,13 @@ public enum ProcessDirection: String {
     case encryption, decryption
 }
 
-private func encode(_ input: String, with configure: Configuration) throws -> String {
+private func encode(_ input: String, with configure: Configuration<Character>) throws -> String {
     let enigma1 = try enigmaMachine(mappings: configure)
     let enigma2 = try enigmaMachine(mappings: configure)
     var encodedText = input
-    encodedText = try encoder(text: encodedText, machine: enigma1)
+    encodedText = try String(encoder(text: Array(encodedText), machine: enigma1))
     encodedText = String(encodedText.characters.reversed())
-    encodedText = try encoder(text: encodedText, machine: enigma2)
+    encodedText = try String(encoder(text: Array(encodedText), machine: enigma2))
     return encodedText
 }
 
@@ -39,7 +39,7 @@ private func reverse(code codeString: String) throws -> String {
     return String(text)
 }
 
-public func process(_ input: String, with configure: Configuration = rotors) throws -> (String, ProcessDirection) {
+public func process(_ input: String, with configure: Configuration<Character> = rotors) throws -> (String, ProcessDirection) {
     var string: String
     var encodedText: String
     let direction: ProcessDirection
@@ -47,7 +47,7 @@ public func process(_ input: String, with configure: Configuration = rotors) thr
         string = try encode(input, with: configure)
         encodedText = try reverse(code: string)
         direction = .decryption
-    } catch is Errors {
+    } catch is Errors<Character> {
         string = transcode(from: input)
         encodedText = try encode(string, with: configure)
         direction = .encryption
@@ -65,9 +65,9 @@ if arguments.count == 1 {
         print("\(direction == .encryption ? "加密" : "解密")得到：\n\(encodedText)")
     } catch is ProcessingErrors {
         print("密文有誤，解密失敗，試試別的？")
-    } catch Errors.invalidCharacters(let character) {
-        print("糟糕，出錯了！無法加密「\(character)」")
-    } catch Errors.duplicationInConfiguration(let characters) {
-        print("糟糕，出錯了！密碼機內部故障，「\(characters.0)」、「\(characters.1)」重複")
+    } catch Errors<Character>.invalidElement(let element) {
+        print("糟糕，出錯了！無法加密「\(element)」")
+    } catch Errors<Character>.duplicationInConfiguration(let elements) {
+        print("糟糕，出錯了！密碼機內部故障，「\(elements.0)」、「\(elements.1)」重複")
     }
 }

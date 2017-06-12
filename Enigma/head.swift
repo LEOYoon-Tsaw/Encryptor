@@ -3,33 +3,33 @@
 //  Enigma
 //
 //  Created by LEO Yoon-Tsaw on 18/4/15.
-//  Copyright (c) 2016 Yoon-Tsaw Leo. All rights reserved.
+//  Copyright (c) 2017 Yoon-Tsaw Leo. All rights reserved.
 //
 //  Enigma Machine -- An old-fashioned encoding algorithm
 //
 
-public enum Errors: Error {
-    case invalidCharacters(character: Character)
-    case duplicationInConfiguration(characters: (Character, Character))
+public enum Errors<T: Hashable>: Error {
+    case invalidElement(element: T)
+    case duplicationInConfiguration(elements: (T, T))
 }
 
-public typealias Configuration = ([([Character: Character], Int)], [Character: Character])
-typealias EnigmaTranslator = (Character) throws -> Character
+public typealias Configuration<T: Hashable> = ([([T: T], Int)], [T: T])
+typealias EnigmaTranslator<T: Hashable> = (T) throws -> T
 
-func enigmaMachine(mappings: Configuration) throws -> EnigmaTranslator {
+func enigmaMachine<T>(mappings: Configuration<T>) throws -> EnigmaTranslator<T> {
     var turn: UInt = 0
     var extraTurn: UInt = 0
 
-    func rotorCreator(mapping: [Character: Character], frequency: Int) throws -> (EnigmaTranslator, EnigmaTranslator) {
+    func rotorCreator(mapping: [T: T], frequency: Int) throws -> (EnigmaTranslator<T>, EnigmaTranslator<T>) {
         let length = mapping.count
         var leftSide = Array(mapping.keys)
         let rightSide = Array(mapping.values)
         var leftSearch = Dictionary(uniqueKeysWithValues: leftSide.enumerated().map { ($0.element, $0.offset) })
         let rightSearch = try Dictionary(rightSide.enumerated().map { ($0.element, $0.offset) }) { (first, second) in
-            throw Errors.duplicationInConfiguration(characters: (rightSide[first], rightSide[second]))
+            throw Errors.duplicationInConfiguration(elements: (rightSide[first], rightSide[second]))
         }
         
-        func rotor(_ input: Character) throws -> Character {
+        func rotor(_ input: T) throws -> T {
             if turn % UInt(frequency) == 0 {
                 let first = leftSide.removeFirst()
                 leftSide.append(first)
@@ -37,14 +37,14 @@ func enigmaMachine(mappings: Configuration) throws -> EnigmaTranslator {
                 leftSearch[first] = length - 1
             }
             guard let index = leftSearch[input] else {
-                throw Errors.invalidCharacters(character: input)
+                throw Errors.invalidElement(element: input)
             }
             extraTurn = extraTurn &+ UInt(index % 3)
             return rightSide[index]
         }
-        func reverseRotor(_ input: Character) throws -> Character {
+        func reverseRotor(_ input: T) throws -> T {
             guard let index = rightSearch[input] else {
-                throw Errors.invalidCharacters(character: input)
+                throw Errors.invalidElement(element: input)
             }
             extraTurn = extraTurn &+ UInt(index % 3)
             return leftSide[index]
@@ -52,17 +52,17 @@ func enigmaMachine(mappings: Configuration) throws -> EnigmaTranslator {
         return (rotor, reverseRotor)
     }
 
-    func reflectorCreator(mapping: [Character: Character]) throws -> EnigmaTranslator {
+    func reflectorCreator(mapping: [T: T]) throws -> EnigmaTranslator<T> {
         let map = try mapping.merging(mapping.map { ($0.value, $0.key) }) { (first, second) in
             if first == second {
                 return first
             } else {
-                throw Errors.duplicationInConfiguration(characters: (first, second))
+                throw Errors.duplicationInConfiguration(elements: (first, second))
             }
         }
-        func reflector(_ input: Character) throws -> Character {
+        func reflector(_ input: T) throws -> T {
             guard let output = map[input] else {
-                throw Errors.invalidCharacters(character: input)
+                throw Errors.invalidElement(element: input)
             }
             return output
         }
@@ -76,7 +76,7 @@ func enigmaMachine(mappings: Configuration) throws -> EnigmaTranslator {
         encoders.append(reverseRotor)
     }
 
-    func encode(_ input: Character) throws -> Character {
+    func encode(_ input: T) throws -> T {
         var character = input
         for encoder in encoders {
             let output = try encoder(character)
@@ -89,6 +89,6 @@ func enigmaMachine(mappings: Configuration) throws -> EnigmaTranslator {
     return encode
 }
 
-func encoder(text: String, machine: EnigmaTranslator) throws -> String {
-    return try String(text.map { try machine($0) })
+func encoder<T: Hashable>(text: [T], machine: EnigmaTranslator<T>) throws -> [T] {
+    return try text.map { try machine($0) }
 }
