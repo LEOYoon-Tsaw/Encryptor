@@ -90,10 +90,5 @@ func enigmaMachine(mappings: Configuration) throws -> EnigmaTranslator {
 }
 
 func encoder(text: String, machine: EnigmaTranslator) throws -> String {
-    var encodedText = ""
-    for word in text {
-        let encodedWord = try machine(word)
-        encodedText.append(encodedWord)
-    }
-    return encodedText
+    return try String(text.map { try machine($0) })
 }
