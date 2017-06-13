@@ -17,9 +17,9 @@ private func encode(_ input: String, with configure: Configuration<Character>) t
     let enigma1 = try enigmaMachine(mappings: configure)
     let enigma2 = try enigmaMachine(mappings: configure)
     var encodedText = Array(input)
-    encodedText = try encoder(text: encodedText, machine: enigma1)
+    try encode(&encodedText, with: enigma1)
     encodedText.reverse()
-    encodedText = try encoder(text: encodedText, machine: enigma2)
+    try encode(&encodedText, with: enigma2)
     return String(encodedText)
 }
 
