@@ -16,11 +16,11 @@ public enum ProcessDirection: String {
 private func encode(_ input: String, with configure: Configuration<Character>) throws -> String {
     let enigma1 = try enigmaMachine(mappings: configure)
     let enigma2 = try enigmaMachine(mappings: configure)
-    var encodedText = input
-    encodedText = try String(encoder(text: Array(encodedText), machine: enigma1))
-    encodedText = String(encodedText.characters.reversed())
-    encodedText = try String(encoder(text: Array(encodedText), machine: enigma2))
-    return encodedText
+    var encodedText = Array(input)
+    encodedText = try encoder(text: encodedText, machine: enigma1)
+    encodedText.reverse()
+    encodedText = try encoder(text: encodedText, machine: enigma2)
+    return String(encodedText)
 }
 
 private func transcode(from input: String, prefix: String = "") -> String {
