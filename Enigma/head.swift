@@ -14,7 +14,7 @@ public enum Errors<T: Hashable>: Error {
 }
 
 public typealias Configuration<T: Hashable> = ([([T: T], Int)], [T: T])
-typealias EnigmaTranslator<T: Hashable> = (inout T) throws -> Void
+typealias EnigmaTranslator<T: Hashable> = (T) throws -> T
 
 func enigmaMachine<T>(mappings: Configuration<T>) throws -> EnigmaTranslator<T> {
     var turn: UInt = 0
@@ -29,7 +29,7 @@ func enigmaMachine<T>(mappings: Configuration<T>) throws -> EnigmaTranslator<T> 
             throw Errors.duplicationInConfiguration(elements: (rightSide[first], rightSide[second]))
         }
         
-        func rotor(_ input: inout T) throws -> Void {
+        func rotor(_ input: T) throws -> T {
             if turn % UInt(frequency) == 0 {
                 let first = leftSide.removeFirst()
                 leftSide.append(first)
@@ -40,14 +40,14 @@ func enigmaMachine<T>(mappings: Configuration<T>) throws -> EnigmaTranslator<T> 
                 throw Errors.invalidElement(element: input)
             }
             extraTurn = extraTurn &+ UInt(index % 3)
-            input = rightSide[index]
+            return rightSide[index]
         }
-        func reverseRotor(_ input: inout T) throws -> Void {
+        func reverseRotor(_ input: T) throws -> T {
             guard let index = rightSearch[input] else {
                 throw Errors.invalidElement(element: input)
             }
             extraTurn = extraTurn &+ UInt(index % 3)
-            input = leftSide[index]
+            return leftSide[index]
         }
         return (rotor, reverseRotor)
     }
@@ -60,11 +60,11 @@ func enigmaMachine<T>(mappings: Configuration<T>) throws -> EnigmaTranslator<T> 
                 throw Errors.duplicationInConfiguration(elements: (first, second))
             }
         }
-        func reflector(_ input: inout T) throws -> Void {
+        func reflector(_ input: T) throws -> T {
             guard let output = map[input] else {
                 throw Errors.invalidElement(element: input)
             }
-            input = output
+            return output
         }
         return reflector
     }
@@ -76,18 +76,20 @@ func enigmaMachine<T>(mappings: Configuration<T>) throws -> EnigmaTranslator<T> 
         encoders.append(reverseRotor)
     }
 
-    func encode(_ input: inout T) throws -> Void {
+    func encode(_ input: T) throws -> T {
+        var output = input
         for encoder in encoders {
-            try encoder(&input)
+            output = try encoder(output)
         }
         turn = turn &+ 1 &+ extraTurn % 3
         extraTurn %= 2
+        return output
     }
     return encode
 }
 
 func encode<T: Hashable>(_ input: inout [T], with machine: EnigmaTranslator<T>) throws -> Void {
     for i in 0..<input.count {
-        try machine(&input[i])
+        input[i] = try machine(input[i])
     }
 }
