@@ -13,7 +13,7 @@ private func parse(left: String, right: String) -> Dictionary<Character, Charact
 }
 
 let base = 9, seperator: Character = "9"
-let rotors = ([(parse(left: "3194820576", right: "7325091864")!, 1),
+public let rotors = ([(parse(left: "3194820576", right: "7325091864")!, 1),
     (parse(left: "6234098751", right: "5426801973")!, 2),
     (parse(left: "6735120894", right: "0651924783")!, 3),
     (parse(left: "2816043795", right: "6890751324")!, 5),
