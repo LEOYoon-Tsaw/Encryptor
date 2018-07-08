@@ -15,7 +15,7 @@ private func parse(left: String, right: String) -> ([Character], [Character])? {
 
 private func parseReflector(left: String, right: String) -> ([Character], [Character])? {
     let left = Array(left), right = Array(right)
-    guard Set(left).count == left.count && Set(right).count == right.count else {
+    guard left.count == right.count && Set(left).count == left.count && Set(right).count == right.count else {
         return nil
     }
     return (left, right)
