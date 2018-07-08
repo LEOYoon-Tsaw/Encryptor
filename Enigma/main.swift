@@ -17,6 +17,7 @@ private func encode(_ input: String, with configure: Configuration<Character>) t
     let enigma1 = try enigmaMachine(mappings: configure)
     let enigma2 = try enigmaMachine(mappings: configure)
     var encodedText = Array(input)
+    
     try encode(&encodedText, with: enigma1)
     encodedText.reverse()
     try encode(&encodedText, with: enigma2)
@@ -69,5 +70,7 @@ if arguments.count == 1 {
         print("糟糕，出錯了！無法加密「\(element)」")
     } catch Errors<Character>.duplicationInConfiguration(let elements) {
         print("糟糕，出錯了！密碼機內部故障，「\(elements.0)」、「\(elements.1)」重複")
+    } catch Errors<Character>.invalidConfiguration {
+        print("糟糕，出錯了！密碼機構造異常")
     }
 }

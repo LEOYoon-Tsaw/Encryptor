@@ -10,24 +10,26 @@
 
 public enum Errors<T: Hashable>: Error {
     case invalidElement(element: T)
+    case invalidConfiguration
     case duplicationInConfiguration(elements: (T, T))
 }
 
-public typealias Configuration<T: Hashable> = ([([T: T], Int)], [T: T])
+public typealias Configuration<T: Hashable> = ([(([T], [T]), Int)], ([T], [T]))
 typealias EnigmaTranslator<T: Hashable> = (T) throws -> T
 
 func enigmaMachine<T>(mappings: Configuration<T>) throws -> EnigmaTranslator<T> {
     var turn: UInt = 0
     var extraTurn: UInt = 0
 
-    func rotorCreator(mapping: [T: T], frequency: Int) throws -> (EnigmaTranslator<T>, EnigmaTranslator<T>) {
-        let length = mapping.count
-        var leftSide = Array(mapping.keys)
-        let rightSide = Array(mapping.values)
-        var leftSearch = Dictionary(uniqueKeysWithValues: leftSide.enumerated().map { ($0.element, $0.offset) })
-        let rightSearch = try Dictionary(rightSide.enumerated().map { ($0.element, $0.offset) }) { (first, second) in
-            throw Errors.duplicationInConfiguration(elements: (rightSide[first], rightSide[second]))
+    func rotorCreator(mapping: ([T], [T]), frequency: Int) throws -> (EnigmaTranslator<T>, EnigmaTranslator<T>) {
+        let length = mapping.0.count
+        guard length == mapping.1.count else {
+            throw Errors<Character>.invalidConfiguration
         }
+        var leftSide = mapping.0
+        let rightSide = mapping.1
+        var leftSearch = Dictionary(uniqueKeysWithValues: leftSide.enumerated().map { ($0.element, $0.offset) })
+        let rightSearch = Dictionary(uniqueKeysWithValues: rightSide.enumerated().map { ($0.element, $0.offset) })
         
         func rotor(_ input: T) throws -> T {
             if turn % UInt(frequency) == 0 {
@@ -52,8 +54,11 @@ func enigmaMachine<T>(mappings: Configuration<T>) throws -> EnigmaTranslator<T> 
         return (rotor, reverseRotor)
     }
 
-    func reflectorCreator(mapping: [T: T]) throws -> EnigmaTranslator<T> {
-        let map = try mapping.merging(mapping.map { ($0.value, $0.key) }) { (first, second) in
+    func reflectorCreator(mapping: ([T], [T])) throws -> EnigmaTranslator<T> {
+        var left = mapping.0, right = mapping.1
+        left.append(contentsOf: mapping.1)
+        right.append(contentsOf: mapping.0)
+        let map = try Dictionary(zip(left, right)) { (first, second) in
             if first == second {
                 return first
             } else {
