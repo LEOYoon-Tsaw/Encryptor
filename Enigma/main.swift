@@ -6,8 +6,11 @@
 //  Copyright (c) 2017 Yoon-Tsaw Leo. All rights reserved.
 //
 
+import Foundation
+
 public enum ProcessingErrors: Error {
     case invalidFormat, invalidEncryption
+    case invalidFilePath(path: String)
 }
 public enum ProcessDirection: String {
     case encryption, decryption
@@ -56,21 +59,68 @@ public func process(_ input: String, with configure: Configuration<Character> = 
     return (encodedText, direction)
 }
 
+func pathToURL(_ path: String) throws -> URL {
+    let userDir = FileManager.default.homeDirectoryForCurrentUser
+    if path.hasPrefix("~") {
+        if let pathStartIndex = path.firstIndex(of: "/") {
+            let newPath = path[path.index(after: pathStartIndex)...]
+            return userDir.appendingPathComponent(String(newPath))
+        } else {
+            throw ProcessingErrors.invalidFilePath(path: path)
+        }
+    } else {
+        return URL(fileURLWithPath: path)
+    }
+}
+
 let arguments = CommandLine.arguments
 if arguments.count == 1 {
-    print("此乃一密碼機，用法：鍵入「Enigma 內容」，程式自動判斷加密或解密內容。")
-} else {
+    print("This is an encryption tool, to use, type 'enigma <string>', it will be automatically encoded or decoded based on the nature of the string.")
+} else if arguments[1] != "-f" {
     let inputString = arguments.dropFirst().joined(separator: " ")
     do {
         let (encodedText, direction) = try process(inputString)
-        print("\(direction == .encryption ? "加密" : "解密")得到：\n\(encodedText)")
+        print("\(direction == .encryption ? "Encoded string" : "Decoded message"):\n\(encodedText)")
     } catch is ProcessingErrors {
-        print("密文有誤，解密失敗，試試別的？")
+        fputs("The encrypted string is corrupted, please try another one!\n", stderr)
     } catch Errors<Character>.invalidElement(let element) {
-        print("糟糕，出錯了！無法加密「\(element)」")
+        fputs("Oops, The character '\(element)' cannot be encoded!\n", stderr)
     } catch Errors<Character>.duplicationInConfiguration(let elements) {
-        print("糟糕，出錯了！密碼機內部故障，「\(elements.0)」、「\(elements.1)」重複")
+        fputs("Oops, the encryption configuration is duplicated! '\(elements.0)', '\(elements.1)' are the same.\n", stderr)
     } catch Errors<Character>.invalidConfiguration {
-        print("糟糕，出錯了！密碼機構造異常")
+        fputs("Oops, the encryption configuration is invalid!\n", stderr)
+    }
+} else {
+    do {
+        guard arguments.count == 4 else {
+            fputs("Invalid arguments.\nUsage: enigma -f <source file> <target file>\n", stderr)
+            exit(1)
+        }
+        let sourceFile = try pathToURL(arguments[2])
+        let contents: String
+        do {
+            contents = try String(contentsOf: sourceFile, encoding: .utf8)
+        } catch {
+            throw ProcessingErrors.invalidFilePath(path: String(sourceFile.absoluteString.dropFirst(7)))
+        }
+        let (encodedText, direction) = try process(contents)
+        
+        let targetFile = try pathToURL(arguments[3])
+        do {
+            try encodedText.write(to: targetFile, atomically: false, encoding: .utf8)
+        } catch {
+            throw ProcessingErrors.invalidFilePath(path: String(targetFile.absoluteString.dropFirst(7)))
+        }
+        print("\(direction == .encryption ? "Encoded" : "Decoded") file saved to:\n\(String(targetFile.absoluteString.dropFirst(7)))")
+    } catch ProcessingErrors.invalidFilePath(let path) {
+        fputs("Invalid path: \(path)\n", stderr)
+    } catch is ProcessingErrors {
+        fputs("The encrypted string is corrupted, please try another one!\n", stderr)
+    } catch Errors<Character>.invalidElement(let element) {
+        fputs("Oops, The character '\(element)' cannot be encoded!\n", stderr)
+    } catch Errors<Character>.duplicationInConfiguration(let elements) {
+        fputs("Oops, the encryption configuration is duplicated! '\(elements.0)', '\(elements.1)' are the same.\n", stderr)
+    } catch Errors<Character>.invalidConfiguration {
+        fputs("Oops, the encryption configuration is invalid!\n", stderr)
     }
 }
